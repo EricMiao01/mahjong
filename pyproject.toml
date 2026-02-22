@@ -1,0 +1,12 @@
+[project]
+name = "mahjong"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.13.3",
+    "python-socketio>=5.16.1",
+    "requests>=2.32.5",
+    "websocket-client>=1.9.0",
+]
