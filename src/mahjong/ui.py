@@ -120,43 +120,54 @@ def draw_table(
     return row
 
 
+def _tile_rows(label: str) -> tuple[str, str]:
+    """
+    將牌字串拆成上下兩列字元。
+    - 兩字牌（一萬、二筒…）: 上=數字字, 下=花色字
+    - 單字牌（中、東、梅…）: 上=下=同一字（重複）
+    """
+    if len(label) == 2:
+        return label[0], label[1]
+    return label[0], label[0]
+
+
 def draw_hand(
     stdscr,
-    player,              # Player
+    player,
     player_idx: int,
     cursor: int,
-    advice: dict[int, list] | None = None,   # {code: ting_tiles}
+    advice: dict[int, list] | None = None,
     newly_drawn: "Tile | None" = None,
     start_row: int = 0,
 ):
-    """在 start_row 之後畫出玩家手牌列（含游標高亮、聽牌建議）。"""
+    """在 start_row 之後畫出玩家手牌（直立兩列顯示）。"""
     _safe_addstr(stdscr, start_row, 0,
                  f"玩家 {player_idx} 的手牌",
                  curses.color_pair(COLOR_WIN) | curses.A_BOLD)
 
-    # 手牌列
-    tile_row = start_row + 1
+    top_row = start_row + 1
+    bot_row = start_row + 2
     col = 0
+
     for i, tile in enumerate(player.hand_tiles):
-        label = str(tile)
+        top_ch, bot_ch = _tile_rows(str(tile))
         is_cursor = (i == cursor)
         is_new    = (tile is newly_drawn)
 
         if is_cursor:
             attr = curses.color_pair(COLOR_CURSOR) | curses.A_BOLD
-            txt = f" {label} "
         elif is_new:
             attr = curses.color_pair(COLOR_WIN)
-            txt = f" {label} "
         else:
             attr = curses.color_pair(COLOR_NORMAL)
-            txt = f" {label} "
 
-        _safe_addstr(stdscr, tile_row, col, txt, attr)
-        col += len(txt)
+        # 每個 CJK 字元佔 2 terminal columns，加 1 空格做間距 → 每格 3 cols
+        _safe_addstr(stdscr, top_row, col, top_ch, attr)
+        _safe_addstr(stdscr, bot_row, col, bot_ch, attr)
+        col += 3
 
     # 聽牌建議
-    advice_row = tile_row + 2
+    advice_row = bot_row + 2
     if advice:
         _safe_addstr(stdscr, advice_row, 0,
                      "聽牌建議：",
@@ -172,6 +183,7 @@ def draw_hand(
             advice_row += 1
 
     return advice_row
+
 
 
 def draw_hint_bar(stdscr, hint: str):
