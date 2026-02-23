@@ -397,7 +397,7 @@ def setup_screen(stdscr) -> set[int]:
         stdscr.clear()
         _safe_addstr(stdscr, 0, 0, "歡迎來到終端機麻將！",
                      curses.color_pair(COLOR_TITLE) | curses.A_BOLD)
-        _safe_addstr(stdscr, 2, 0, "請選擇由 AI 操作的玩家（Space 切換，Enter 開始）：")
+        _safe_addstr(stdscr, 2, 0, "請選擇由 AI 操作的玩家（0-3 切換，Enter 開始）：")
         for i, p in enumerate(candidates):
             is_ai = p in selected
             mark  = "  [AI] " if is_ai else "  [人] "
