@@ -44,6 +44,13 @@ class Player:
             self.hand_tiles.remove(tile)
         self.melded_tiles.extend([tile, tile, tile, tile])
 
+    def declare_concealed_kong(self, tile: Tile):
+        """暗槓：從手牌移除 4 張，將 4 張加入 melded_tiles"""
+        for _ in range(4):
+            self.hand_tiles.remove(tile)
+        self.melded_tiles.extend([tile, tile, tile, tile])
+
+
     def declare_chow(self, tile: Tile, option: tuple[int, int]):
         """吃牌：option 為手牌中兩張的 code；從手牌移除這兩張，將 3 張加入 melded_tiles"""
         code_a, code_b = option

@@ -9,6 +9,16 @@ class RuleEngine:
     def can_kong(hand: list[Tile], tile: Tile) -> bool:
         return hand.count(tile) >= 3
 
+    def can_concealed_kong(hand: list[Tile]) -> list[Tile]:
+        """回傳手牌中可以暗槓的牌（出現 4 次的牌），每種只回傳一個代表。"""
+        seen: set[int] = set()
+        result: list[Tile] = []
+        for tile in hand:
+            if tile.code not in seen and hand.count(tile) >= 4:
+                seen.add(tile.code)
+                result.append(tile)
+        return result
+
     def can_chow(hand: list[Tile], tile: Tile) -> list[tuple[Tile, Tile]]:
         if tile.get_suit() >= 4:
             return []
