@@ -32,6 +32,9 @@ class Game:
         for player in self.players:
             player.order_hand()
 
+    def _end_game(self):
+        self._show_msg("遊戲結束！", pause=True)
+
     # ── 補花 ──────────────────────────────────────────
 
     def _handle_flowers(self, player_idx: int) -> tuple[bool, Tile | None]:
@@ -54,7 +57,31 @@ class Game:
                 return True, last_drawn
         return False, last_drawn
 
+    def _apply_flowers(self, player_idx: int, current_tile: Tile | None) -> tuple[bool, Tile | None]:
+        """執行補花並更新 current_tile（若有補進新牌就用最後補進的牌覆蓋）。"""
+        is_over, drawn = self._handle_flowers(player_idx)
+        if drawn is not None:
+            current_tile = drawn
+        return is_over, current_tile
+
     # ── 暗槓 ──────────────────────────────────────────
+
+    def _apply_concealed_kong(self, player_idx: int, current_tile: Tile | None) -> tuple[bool, Tile | None]:
+        """執行暗槓（可能連續多次）並更新 current_tile（若有摸進新牌就覆蓋）。"""
+        is_over, drawn = self._handle_concealed_kong(player_idx, newly_drawn=current_tile)
+        if drawn is not None:
+            current_tile = drawn
+        return is_over, current_tile
+
+    def _do_concealed_kong(self, player_idx: int, tile: Tile, actor_tag: str) -> tuple[bool, Tile | None]:
+        """執行一次暗槓流程（宣告→補槓牌→補花），回傳 (是否結束遊戲, 最後摸進的牌)。"""
+        player = self.players[player_idx]
+        player.declare_concealed_kong(tile)
+        last_drawn = self.deck.draw_from_back()
+        player.add_tile_to_hand(last_drawn)
+        player.order_hand()
+        self._show_msg(f"{actor_tag}玩家 {player_idx} 暗槓：{tile}", pause=False)
+        return self._apply_flowers(player_idx, last_drawn)
 
     def _handle_concealed_kong(self, player_idx: int, newly_drawn: Tile | None = None) -> tuple[bool, Tile | None]:
         """
@@ -74,14 +101,7 @@ class Game:
             # AI：直接做第一個可暗槓的牌
             if player_idx in self.ai_players:
                 tile = kong_tiles[0]
-                player.declare_concealed_kong(tile)
-                last_drawn = self.deck.draw_from_back()
-                player.add_tile_to_hand(last_drawn)
-                player.order_hand()
-                self._show_msg(f"[AI] 玩家 {player_idx} 暗槓：{tile}", pause=False)
-                is_over, f_drawn = self._handle_flowers(player_idx)
-                if f_drawn:
-                    last_drawn = f_drawn
+                is_over, last_drawn = self._do_concealed_kong(player_idx, tile, actor_tag="[AI] ")
                 if is_over:
                     return True, last_drawn
                 continue  # 摸到新牌後再判斷一次
@@ -102,14 +122,7 @@ class Game:
                 return False, last_drawn
 
             chosen_tile = kong_tiles[sel]
-            player.declare_concealed_kong(chosen_tile)
-            last_drawn = self.deck.draw_from_back()
-            player.add_tile_to_hand(last_drawn)
-            player.order_hand()
-            self._show_msg(f"玩家 {player_idx} 暗槓：{chosen_tile}", pause=False)
-            is_over, f_drawn = self._handle_flowers(player_idx)
-            if f_drawn:
-                last_drawn = f_drawn
+            is_over, last_drawn = self._do_concealed_kong(player_idx, chosen_tile, actor_tag="")
             if is_over:
                 return True, last_drawn
             # 繼續迴圈，看摸到的新牌是否又能暗槓
@@ -285,10 +298,9 @@ class Game:
             self.players[winner_idx].add_tile_to_hand(extra_tile)
             self.players[winner_idx].order_hand()
             self._show_msg(f"玩家 {winner_idx} 槓！", pause=False)
-            is_over, f_drawn = self._handle_flowers(winner_idx)
+            is_over, new_drawn_from_reaction = self._apply_flowers(winner_idx, extra_tile)
             if is_over:
                 return True
-            new_drawn_from_reaction = f_drawn if f_drawn else extra_tile
 
         elif action == "吃":
             self.players[winner_idx].declare_chow(discard, extra)
@@ -324,18 +336,14 @@ class Game:
         )
 
         # 2. 補花
-        is_over, f_drawn = self._handle_flowers(idx)
+        is_over, tile = self._apply_flowers(idx, tile)
         if is_over:
             return True
-        if f_drawn:
-            tile = f_drawn
 
         # 3. 暗槓（摸進來的暗槓）
-        is_over, k_drawn = self._handle_concealed_kong(idx, newly_drawn=tile)
+        is_over, tile = self._apply_concealed_kong(idx, tile)
         if is_over:
             return True
-        if k_drawn:
-            tile = k_drawn
 
         # 4. 自摸判斷
         if RuleEngine.is_hu(player.hand_tiles, None):
@@ -382,11 +390,11 @@ class Game:
         # 發牌後補花 + 暗槓（初始手牌）
         for i in range(4):
             if self._handle_flowers(i)[0]:
-                self._show_msg("遊戲結束！", pause=True)
+                self._end_game()
                 return
             self.players[i].order_hand()
             if self._handle_concealed_kong(i)[0]:
-                self._show_msg("遊戲結束！", pause=True)
+                self._end_game()
                 return
             self.players[i].order_hand()
 
@@ -442,4 +450,3 @@ class Game:
         ui.draw_hint_bar(self.stdscr, "按任意鍵退出")
         self.stdscr.refresh()
         self.stdscr.getch()
-
