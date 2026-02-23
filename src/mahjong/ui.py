@@ -91,17 +91,47 @@ def draw_table(
         if is_hl:
             tag += " ← 出牌"
 
-        attr = curses.color_pair(COLOR_SECTION) | curses.A_BOLD
-        _safe_addstr(stdscr, row, 0, tag, attr)
+        sec_attr = curses.color_pair(COLOR_SECTION) | curses.A_BOLD
+        _safe_addstr(stdscr, row, 0, tag, sec_attr)
         row += 1
 
-        melded  = " ".join(str(t) for t in p.melded_tiles)  or "-"
-        flowers = " ".join(str(t) for t in p.flower_tiles)  or "-"
-        discard = " ".join(str(t) for t in p.discarded_tiles) or "-"
-        _safe_addstr(stdscr, row, 2, f"亮牌: {melded}   花: {flowers}")
-        row += 1
-        _safe_addstr(stdscr, row, 2, f"棄牌: {discard}")
+        # ── 亮牌 + 花（同一個兩列區塊）──────────────
+        # "亮:" = 亮(2col) + :(1col) = 3 terminal cols；從 col 2 開始 → tiles 在 col 5
+        _safe_addstr(stdscr, row, 2, "亮:", sec_attr)
+        tile_col = 5
+        if p.melded_tiles:
+            for t in p.melded_tiles:
+                top, bot = _tile_rows(str(t))
+                _safe_addstr(stdscr, row,   tile_col, top)
+                _safe_addstr(stdscr, row+1, tile_col, bot)
+                tile_col += 3   # 每個 CJK 字 2col + 空格 1col
+            flower_col = tile_col + 2   # 兩格空白分隔
+        else:
+            _safe_addstr(stdscr, row, tile_col, "-")
+            flower_col = tile_col + 3   # "- " + 兩格分隔
+
+        if p.flower_tiles:
+            _safe_addstr(stdscr, row, flower_col, "花:", sec_attr)
+            f_tile_col = flower_col + 3
+            for t in p.flower_tiles:
+                top, bot = _tile_rows(str(t))
+                _safe_addstr(stdscr, row,   f_tile_col, top)
+                _safe_addstr(stdscr, row+1, f_tile_col, bot)
+                f_tile_col += 3
         row += 2
+
+        # ── 棄牌（兩列）─────────────────────────────
+        _safe_addstr(stdscr, row, 2, "棄:", sec_attr)
+        tile_col = 5
+        if p.discarded_tiles:
+            for t in p.discarded_tiles:
+                top, bot = _tile_rows(str(t))
+                _safe_addstr(stdscr, row,   tile_col, top)
+                _safe_addstr(stdscr, row+1, tile_col, bot)
+                tile_col += 3
+        else:
+            _safe_addstr(stdscr, row, tile_col, "-")
+        row += 3   # 2 tile rows + 1 blank
 
     # 分隔線
     _safe_addstr(stdscr, row, 0, "─" * 50, curses.color_pair(COLOR_SECTION))
