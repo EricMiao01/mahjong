@@ -201,7 +201,14 @@ def select_from_hand(
     回傳選中的手牌索引。
     """
     player = players[player_idx]
-    cursor = len(player.hand_tiles) - 1
+    # 游標起始位置 = 摸進來的牌的實際索引（排序後不一定在最右）
+    if newly_drawn is not None:
+        cursor = next(
+            (i for i, t in enumerate(player.hand_tiles) if t is newly_drawn),
+            len(player.hand_tiles) - 1,
+        )
+    else:
+        cursor = len(player.hand_tiles) - 1
 
     while True:
         row = draw_table(stdscr, players, player_idx, ai_players,

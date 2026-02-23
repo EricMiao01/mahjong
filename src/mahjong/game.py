@@ -319,7 +319,9 @@ class Game:
         if self._handle_concealed_kong(idx, newly_drawn=tile):
             return True
         # 暗槓後 tile 可能已變，取手牌最後一張作為 newly_drawn 標示
-        tile = player.hand_tiles[-1] if player.hand_tiles else tile
+        # 暗槓後原本摸到的牌會被移走，才需要更新 newly_drawn 標示
+        if not any(t is tile for t in player.hand_tiles):
+            tile = player.hand_tiles[-1] if player.hand_tiles else tile
 
         # 4. 自摸判斷
         if RuleEngine.is_hu(player.hand_tiles, None):
