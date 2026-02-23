@@ -215,6 +215,33 @@ def draw_hand(
     return advice_row
 
 
+def draw_tiles_vertical(
+    stdscr,
+    tiles: list,
+    label: str,
+    row: int,
+    col: int = 2,
+    attr: int = 0,
+) -> int:
+    """
+    在指定位置用直立兩列方式畫出牌組。
+    回傳下一個可用 row。
+    """
+    sec_attr = attr or curses.color_pair(COLOR_SECTION) | curses.A_BOLD
+    _safe_addstr(stdscr, row, col, label, sec_attr)
+    # label 寬度：每個 CJK 字 2col + 雱號/空格 1col
+    lw = sum(2 if ord(c) > 0x2E7F else 1 for c in label)
+    tile_col = col + lw
+    if tiles:
+        for t in tiles:
+            top, bot = _tile_rows(str(t))
+            _safe_addstr(stdscr, row,   tile_col, top, attr)
+            _safe_addstr(stdscr, row+1, tile_col, bot, attr)
+            tile_col += 3
+    else:
+        _safe_addstr(stdscr, row, tile_col, "-", attr)
+    return row + 2
+
 
 def draw_hint_bar(stdscr, hint: str):
     """在畫面最底列顯示操作提示。"""

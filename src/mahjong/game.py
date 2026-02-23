@@ -417,14 +417,13 @@ class Game:
 
             # 亮牌（碰/吃/槓/暗槓）
             if p.melded_tiles:
-                melded_str = " ".join(str(t) for t in p.melded_tiles)
-                ui._safe_addstr(self.stdscr, row, 2, f"亮牌: {melded_str}", attr)
-                row += 1
+                row = ui.draw_tiles_vertical(
+                    self.stdscr, p.melded_tiles, "亮: ", row, col=2, attr=attr)
 
             # 手牌
-            hand_str = " ".join(str(t) for t in p.hand_tiles) if p.hand_tiles else "-"
-            ui._safe_addstr(self.stdscr, row, 2, f"手牌: {hand_str}", attr)
-            row += 2
+            row = ui.draw_tiles_vertical(
+                self.stdscr, p.hand_tiles, "手: ", row, col=2, attr=attr)
+            row += 1   # 空一行分隔
 
         ui.draw_hint_bar(self.stdscr, "按任意鍵退出")
         self.stdscr.refresh()
